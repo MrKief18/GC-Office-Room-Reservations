@@ -531,10 +531,7 @@ function submitReservation() {
   existing.push(reservation);
   saveReservations(existing);
 
-  // Download .ics file and send confirmation email
-  downloadICS(reservation);
   sendConfirmationEmail(reservation);
-
   showToast('Room reserved! Confirmation email sent.');
   resetBookForm();
 }
@@ -600,22 +597,40 @@ function downloadICS(res) {
 
 // ══════════════════════════════════════════
 // EMAIL CONFIRMATION — sends via EmailJS
-// Template variables must match the EmailJS template exactly
+// Includes a Google Calendar link so recipients can add the event in one click
 // ══════════════════════════════════════════
 
+// Build a Google Calendar "Add to Calendar" URL from reservation data
+function buildGoogleCalLink(res, roomName) {
+  function toGCalDate(date, time) {
+    return date.replace(/-/g, '') + 'T' + time.replace(/:/g, '') + '00';
+  }
+  const base   = 'https://calendar.google.com/calendar/render';
+  const params = new URLSearchParams({
+    action:   'TEMPLATE',
+    text:     `${res.title} — ${roomName}`,
+    dates:    `${toGCalDate(res.date, res.start)}/${toGCalDate(res.date, res.end)}`,
+    details:  `Booked by: ${res.name}\nNotes: ${res.notes || 'None'}`,
+    location: roomName,
+  });
+  return `${base}?${params.toString()}`;
+}
+
 function sendConfirmationEmail(res) {
-  const room = getRooms().find(r => r.id === res.roomId);
+  const room     = getRooms().find(r => r.id === res.roomId);
+  const roomName = room ? room.name : 'Unknown Room';
 
   const templateParams = {
     to_name:  res.name,
     to_email: res.email,
     title:    res.title,
-    room:     room ? room.name : 'Unknown Room',
+    room:     roomName,
     date:     formatDate(res.date),
     start:    res.start,
     end:      res.end,
     name:     res.name,
     notes:    res.notes || 'None',
+    cal_link: buildGoogleCalLink(res, roomName), // "Add to Google Calendar" link
   };
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
@@ -825,8 +840,6 @@ function saveEdit() {
   renderMyReservations();
   renderAdminReservations();
 
-  // Re-download updated .ics and resend confirmation email
-  downloadICS(updated);
   sendConfirmationEmail(updated);
 }
 
