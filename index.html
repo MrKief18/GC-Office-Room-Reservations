@@ -619,10 +619,15 @@ function sendConfirmationEmail(res) {
   };
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-    .then(() => showToast('Confirmation email sent to ' + res.email))
+    .then(response => {
+      console.log('EmailJS success:', response.status, response.text);
+      showToast('Confirmation email sent to ' + res.email);
+    })
     .catch(err => {
+      // Show the full error on screen so we can diagnose it
+      const msg = err?.text || err?.message || JSON.stringify(err);
       console.error('EmailJS error:', err);
-      showToast('Email could not be sent — check console for details.');
+      showToast('Email error: ' + msg, 8000);
     });
 }
 
@@ -938,11 +943,11 @@ function formatDate(dateStr) {
 }
 
 // Show a brief toast message at the bottom-right
-function showToast(msg) {
+function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // Close the edit modal when clicking the dark overlay
