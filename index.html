@@ -537,8 +537,10 @@ function submitReservation() {
 }
 
 function resetBookForm() {
-  ['res-name','res-email','res-title','res-date','res-start','res-end','res-notes']
+  ['res-name','res-email','res-start','res-end','res-notes']
     .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('res-title').value = 'Room Reservation';
+  document.getElementById('res-date').value  = new Date().toISOString().split('T')[0];
   selectedRoom = null;
   renderRoomGrid();
 }
