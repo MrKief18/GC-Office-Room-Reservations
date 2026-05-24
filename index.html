@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GC Office Room Reservations</title>
+  <!-- EmailJS SDK — sends confirmation emails client-side -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     /* ── Reset & base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -402,6 +404,14 @@
 
 const ADMIN_PIN = 'admin123'; // Change this PIN before deploying
 
+// EmailJS credentials
+const EMAILJS_SERVICE_ID  = 'service_mrpjxip';
+const EMAILJS_TEMPLATE_ID = 'template_4xhgm0g';
+const EMAILJS_PUBLIC_KEY  = 'QlMfxxK3eTjhg7YglP8DG';
+
+// Initialize EmailJS with the public key
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
 // Default rooms — admin can add/remove rooms at runtime (stored in localStorage)
 const DEFAULT_ROOMS = [
   { id: 'r1', name: 'Boardroom',      capacity: 12, icon: '🏛️' },
@@ -521,10 +531,11 @@ function submitReservation() {
   existing.push(reservation);
   saveReservations(existing);
 
-  // Trigger .ics calendar invite download
+  // Download .ics file and send confirmation email
   downloadICS(reservation);
+  sendConfirmationEmail(reservation);
 
-  showToast(`Room reserved! Calendar invite downloaded.`);
+  showToast('Room reserved! Confirmation email sent.');
   resetBookForm();
 }
 
@@ -585,6 +596,34 @@ function downloadICS(res) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════
+// EMAIL CONFIRMATION — sends via EmailJS
+// Template variables must match the EmailJS template exactly
+// ══════════════════════════════════════════
+
+function sendConfirmationEmail(res) {
+  const room = getRooms().find(r => r.id === res.roomId);
+
+  const templateParams = {
+    to_name:  res.name,
+    to_email: res.email,
+    title:    res.title,
+    room:     room ? room.name : 'Unknown Room',
+    date:     formatDate(res.date),
+    start:    res.start,
+    end:      res.end,
+    name:     res.name,
+    notes:    res.notes || 'None',
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+    .then(() => showToast('Confirmation email sent to ' + res.email))
+    .catch(err => {
+      console.error('EmailJS error:', err);
+      showToast('Email could not be sent — check console for details.');
+    });
 }
 
 // ══════════════════════════════════════════
@@ -781,8 +820,9 @@ function saveEdit() {
   renderMyReservations();
   renderAdminReservations();
 
-  // Re-download updated calendar invite
+  // Re-download updated .ics and resend confirmation email
   downloadICS(updated);
+  sendConfirmationEmail(updated);
 }
 
 // ══════════════════════════════════════════
