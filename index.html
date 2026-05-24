@@ -409,8 +409,8 @@ const EMAILJS_SERVICE_ID  = 'service_mrpjxip';
 const EMAILJS_TEMPLATE_ID = 'template_4xhgm0g';
 const EMAILJS_PUBLIC_KEY  = 'QlMfxxK3eTjhg7YglP8DG';
 
-// Initialize EmailJS with the public key
-emailjs.init(EMAILJS_PUBLIC_KEY);
+// Initialize EmailJS — v4 requires an object, not a bare string
+emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
 // Default rooms — admin can add/remove rooms at runtime (stored in localStorage)
 const DEFAULT_ROOMS = [
